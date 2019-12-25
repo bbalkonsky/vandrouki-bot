@@ -12,7 +12,8 @@ def create_database():
     cursor = connection.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS users(user_id text, cities text, is_adding text)')
     cursor.execute('CREATE TABLE IF NOT EXISTS link(last_link text)')
-    cursor.execute("INSERT INTO link VALUES (:last_link)", {'last_link': 'https://vandrouki.ru/'})
+    if not cursor.execute("SELECT count(*) FROM link").fetchone()[0]:
+        cursor.execute("INSERT INTO link VALUES ('https://vandrouki.ru/')")
     connection.commit()
     connection.close()
 
@@ -91,21 +92,5 @@ def update_last_link(last_link):
     connection = sqlite3.connect(database)
     cursor = connection.cursor()
     cursor.execute('UPDATE link SET last_link = :last_link', {'last_link': last_link})
-    connection.commit()
-    connection.close()
-
-
-# def set_last_link(last_link):
-#     connection = sqlite3.connect(database)
-#     cursor = connection.cursor()
-#     cursor.execute("INSERT INTO link VALUES (:last_link)", {'last_link': last_link})
-#     connection.commit()
-#     connection.close()
-
-
-def delete():
-    connection = sqlite3.connect(database)
-    cursor = connection.cursor()
-    cursor.execute('DELETE FROM users')
     connection.commit()
     connection.close()
