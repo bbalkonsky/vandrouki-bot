@@ -35,7 +35,7 @@ def text_preprocessing(soup):
     text = re.sub('\s{2,}', ' ', text)
     text = text.lower().strip()
     text = text.split(' ')
-    return filter(lambda x: len(x) > 2, text)
+    return list(filter(lambda x: len(x) > 2, text))
 
 
 def get_new_posts_info(new_posts_links):
@@ -69,5 +69,5 @@ def find_user_links(cities, new_posts):
                     'link': post['link'],
                     'matches': matches
                 })
-                break
+                break  # find one city match - it's enough
     return links_to_user
