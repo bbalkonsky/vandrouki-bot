@@ -1,6 +1,8 @@
+import re
+
 import requests
 from bs4 import BeautifulSoup
-from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
 
 HEADERS = {'User-Agent': 'My User Agent 1.0'}
 
@@ -23,30 +25,49 @@ def find_new_posts(new_posts, last_post):
     return new_posts_links
 
 
+def text_preprocessing(soup):
+    title = soup.find('h1', attrs={'class': 'entry-title'}).text
+    content = soup.find('div', attrs={"class": "entry-content"})
+
+    text = re.sub('[().,/+0-9!?:—=]', ' ', title)
+    for i in content.findAll(['p', 'li']):
+        text += ' ' + re.sub('[().,/+0-9!?:—=]', ' ', i.text)
+    text = re.sub('\s{2,}', ' ', text)
+    text = text.lower().strip()
+    text = text.split(' ')
+    return filter(lambda x: len(x) > 2, text)
+
+
 def get_new_posts_info(new_posts_links):
     new_posts_info = []
     for post in new_posts_links:
-        new_response = requests.get(post, headers=HEADERS)
+        new_response = requests.get(
+            post, headers={'User-Agent': 'My User Agent 1.0'})
         new_soup = BeautifulSoup(new_response.text, 'lxml')
-        post_title = new_soup.find('h1', attrs={'class': 'entry-title'}).text
-        post_content = new_soup.find('div', attrs={"class": "entry-content"}).text
 
         new_posts_info.append({
             'link': post,
-            'content': post_title + ' ' + post_content.replace('\n', ' ')
+            'content': text_preprocessing(new_soup)
         })
     return new_posts_info
+
+
+def find_matches(text, city):
+    matches = process.extract(city, text)
+    top_matches = list(filter(lambda x: x[1] > 80, matches))
+    matches_list = list(map(lambda x: x[0], top_matches))
+    return ', '.join(set(matches_list))
 
 
 def find_user_links(cities, new_posts):
     links_to_user = []
     for post in new_posts:
         for city in cities:
-            # if fuzz.partial_ratio(re.search(r'([А-Яа-я\-]+)', post['content'].lower()).group(1), city.lower()) > 80:
-            # if process.extractOne("санкт-петербург", re.findall(r'([А-Яа-я\-]+)', post['content'].lower()))
-            if fuzz.token_set_ratio(post['content'].lower(), city.strip().lower()) > 80:
-                links_to_user.append(post['link'])
+            matches = find_matches(post['content'], city)
+            if len(matches):
+                links_to_user.append({
+                    'link': post['link'],
+                    'matches': matches
+                })
                 break
     return links_to_user
-
-

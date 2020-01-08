@@ -10,8 +10,10 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 TOKEN = config['ACCESS']['TOKEN']
+URL = config['HOOK']['URL']
+CERT = config['HOOK']['CERT']
 
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(TOKEN, threaded=False)
 
 
 def check_updates():
@@ -34,7 +36,8 @@ def get_users_updates():
                 cities = raw_cities.split(',')
                 links = find_user_links(cities, new_posts)
                 for link in links:
-                    bot.send_message(user['user_id'], text=link)
+                    bot.send_message(user['user_id'], text=link['matches'])
+                    bot.send_message(user['user_id'], text=link['link'])
         time.sleep(60)
 
 
@@ -66,13 +69,18 @@ def handle_message(message):
         bot.send_message(message.chat.id, text='Приветики =)')
 
 
+def get_bot_update(update):
+    bot.process_new_updates([update])
+
+
+def set_hook():
+    bot.remove_webhook()
+    time.sleep(0.1)
+    bot.set_webhook(url='https://{}/HOOK'.format(URL),
+                    certificate=open(CERT, 'rb'))
+
+
 def main():
     create_database()
-
     client_process = Process(target=get_users_updates, args=())
     client_process.start()
-    bot.polling(none_stop=True)
-
-
-if __name__ == "__main__":
-    main()
