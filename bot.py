@@ -1,8 +1,9 @@
+import configparser
 import time
 from multiprocessing import Process
 
+import random
 import telebot
-
 from scripts.database import *
 from scripts.helpers import *
 
@@ -16,57 +17,85 @@ CERT = config['HOOK']['CERT']
 bot = telebot.TeleBot(TOKEN, threaded=False)
 
 
-def check_updates():
-    all_posts = get_posts()
-    new_posts_links = find_new_posts(all_posts, get_last_link())
-    if len(new_posts_links) == 0:
-        return []
-    update_last_link(new_posts_links[0])
-    new_posts = get_new_posts_info(new_posts_links)
-    return new_posts
-
-
-def get_users_updates():
+def endless_parsing():
     while True:
-        new_posts = check_updates()
-        users = read_users()
-        for user in users:
-            raw_cities = user['cities']
-            if len(raw_cities) != 0:
-                cities = raw_cities.split(',')
-                links = find_user_links(cities, new_posts)
-                for link in links:
-                    bot.send_message(user['user_id'], text=link['matches'])
-                    bot.send_message(user['user_id'], text=link['link'])
-        time.sleep(60)
+        try:
+            period = random.randint(60, 90)
+            posts_for_users = get_users_updates()
+            send_user_update(bot, posts_for_users)
+            time.sleep(period)
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            error = template.format(type(ex).__name__, ex.args)
+            print(error)
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
     create_user(message.chat.id)
-    bot.send_message(message.chat.id, text='welcome!')
+    bot.send_photo(message.chat.id, open('pchola.jpeg', 'rb'))
+    bot.send_message(message.chat.id, 'ZDAROVA!')
+    bot.send_message(
+        message.chat.id,
+        text='Пока ты не изменишь список городов, тебе будут приходить уведомления по следующим ключевым словам:\nМосква, Санкт-петербург, Екатеринбург, Турция, Европа\nКак это сделать и вся остальная информация доступна по команде /help')
 
 
 @bot.message_handler(commands=['set'])
 def set_adding(message):
     set_user_adding(message.chat.id, '1')
-    bot.send_message(message.chat.id, 'Напиши список городов через запятую:')
+    bot.send_message(
+        message.chat.id,
+        'Введи города в разных вариантах написания и через запятую, например: \nСанкт-Петербург, Петербург, Питер, Москва, Таллин')
+
+
+@bot.message_handler(commands=['get'])
+def get_cities(message):
+    user_cities = get_user_cities(message.chat.id)
+    if len(user_cities) > 0:
+        list_of_cities = user_cities.split(',')
+        capital_cities = map(lambda x: x.strip().capitalize(), list_of_cities)
+        bot.send_message(message.chat.id, text='Вы отслеживаете следующие города:\n{}'.format(
+            ', '.join(capital_cities)))
+    else:
+        bot.send_message(message.chat.id, text='Вы ничего не отслеживаете')
+
+
+@bot.message_handler(commands=['stop'])
+def get_cities(message):
+    edit_user(message.chat.id, '')
+    bot.send_message(
+        message.chat.id, text='Вам больше не будут приходить уведомления =(')
+
+
+@bot.message_handler(commands=['help'])
+def show_help(message):
+    bot.send_message(message.chat.id, text='''
+Я - клевый бот, который поможет тебе получать акции с сайта vandrouki.ru только с интересующими тебя городами и странами!\n
+В этом тебе помогут следующие команды:
+/set - ввести список городов
+/get - посмотреть, что вы отслеживаете
+/stop - отписаться от рассылки и забыть про скидки''')
 
 
 @bot.message_handler(commands=['status'])
 def status(message):
+    result = ''
     for line in read_users():
-        bot.send_message(message.chat.id, str(line))
+        result += '{}: {}\n'.format(line['user_id'], line['cities'])
+    bot.send_message(message.chat.id, result)
 
 
 @bot.message_handler()
 def handle_message(message):
-    if get_user_adding(message.chat.id) == '1':
-        edit_user(message.chat.id, message.text)
-        set_user_adding(message.chat.id, '0')
-        bot.send_message(message.chat.id, text='Список городов сохранен')
+    if (message.text.strip() != 0 or message.content_type != 'text'):
+        if get_user_adding(message.chat.id) == '1':
+            edit_user(message.chat.id, preprocesd_cities(message.text))
+            set_user_adding(message.chat.id, '0')
+            bot.send_message(message.chat.id, text='Список городов сохранен')
+        else:
+            bot.send_message(message.chat.id, text='Приветики =)')
     else:
-        bot.send_message(message.chat.id, text='Приветики =)')
+        bot.send_message(message.chat.id, text='Шо?')
 
 
 def get_bot_update(update):
@@ -82,5 +111,6 @@ def set_hook():
 
 def main():
     create_database()
-    client_process = Process(target=get_users_updates, args=())
+    init_last_posts()
+    client_process = Process(target=endless_parsing, args=())
     client_process.start()
