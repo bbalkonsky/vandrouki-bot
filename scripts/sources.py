@@ -17,7 +17,7 @@ def get_sources_sites():
             'penult_post': 'https://trip4you.ru/'
         },
         {
-            'source_name': 'pirates',
+            'source_name': 'pirates.travel',
             'source_link': 'https://ru.pirates.travel/',
             'selector': 'article',
             'class': 'item-list',
@@ -25,7 +25,7 @@ def get_sources_sites():
             'penult_post': 'https://ru.pirates.travel/'
         },
         {
-            'source_name': 'sandal',
+            'source_name': 'travelsandal',
             'source_link': 'https://www.travelsandal.ru/',
             'selector': 'article',
             'class': 'post',
@@ -33,7 +33,7 @@ def get_sources_sites():
             'penult_post': 'https://travelsandal.ru/'
         },
         {
-            'source_name': 'radar',
+            'source_name': 'travelradar',
             'source_link': 'https://travelradar.world/',
             'selector': 'article',
             'class': 'post',

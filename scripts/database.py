@@ -1,5 +1,6 @@
 import configparser
 import sqlite3
+
 from scripts.sources import *
 
 config = configparser.ConfigParser()
@@ -36,7 +37,7 @@ def create_user(user_id):
         'user_id': user_id}).fetchone()
     if is_user_exist == None:
         cursor.execute("INSERT INTO users VALUES (:user_id, :cities, :is_adding)",
-                       {'user_id': user_id, 'cities': 'москва,санкт-петербург,екатеринбург,турция,европа',
+                       {'user_id': user_id, 'cities': 'i_want_to_get_all_cities',
                         'is_adding': '0'})
     connection.commit()
     connection.close()
@@ -98,7 +99,7 @@ def init_last_posts():
                     'last_post': source['last_post'],
                     'penult_post': source['penult_post']
                 }
-                )
+            )
     connection.commit()
     connection.close()
 
