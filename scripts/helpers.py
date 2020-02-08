@@ -267,7 +267,10 @@ def get_posts_for_users(users, all_posts):
                         results_list = list(map(lambda res: res['post_url'], user_result))
                         if not (len(user_result) and post['link'] in results_list):
                             post_tags = ''
-                            for tag in post['matches']:
+                            post_cities = set(
+                                ['санкт-петербург' if city in ['спб', 'питер', 'петербург', 'ленинград'] else city for
+                                 city in post['matches']])
+                            for tag in post_cities:
                                 if tag != 'i_want_to_get_all_cities':
                                     post_tags += city_to_hashtag(tag) + ' '
 
