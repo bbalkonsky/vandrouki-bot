@@ -1,8 +1,10 @@
-import random
+import configparser
+import time
 from multiprocessing import Process
 
+import random
 import telebot
-
+from scripts.database import *
 from scripts.helpers import *
 
 config = configparser.ConfigParser()
@@ -37,6 +39,7 @@ def endless_parsing():
             print(error)
 
 
+
 @bot.channel_post_handler(commands=['start'])
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -46,6 +49,7 @@ def start(message):
     bot.send_message(
         message.chat.id,
         text='Отныне ты подписан на самые выгодные предложения для путешествий! Поздравляю! \nОстались вопросы? - /help')
+    message_logger(message)
 
 
 @bot.channel_post_handler(commands=['set'])
@@ -55,6 +59,7 @@ def set_adding(message):
     bot.send_message(
         message.chat.id,
         'Введи через запятую ключевые слова для отслеживания, например: \nСанкт-Петербург, Петербург, Питер, Москва, Франция')
+    message_logger(message)
 
 
 @bot.channel_post_handler(commands=['get'])
@@ -71,6 +76,7 @@ def get_cities(message):
                 ', '.join(capital_cities)))
     else:
         bot.send_message(message.chat.id, text='Вы ничего не отслеживаете')
+    message_logger(message)
 
 
 @bot.channel_post_handler(commands=['stop'])
@@ -79,6 +85,7 @@ def get_cities(message):
     edit_user(message.chat.id, '')
     bot.send_message(
         message.chat.id, text='Вам больше не будут приходить уведомления =(')
+    message_logger(message)
 
 
 @bot.message_handler(commands=['help'])
@@ -89,6 +96,7 @@ def show_help(message):
 /set - ввести список городов
 /get - посмотреть, что вы отслеживаете
 /stop - отписаться от рассылки и забыть про скидки''')
+    message_logger(message)
 
 
 @bot.message_handler(commands=['status'])
@@ -97,7 +105,7 @@ def status(message):
     for line in read_users():
         result += '{}: {}\n'.format(line['user_id'], line['cities'])
     bot.send_message(message.chat.id, result)
-
+    message_logger(message)
 
 @bot.channel_post_handler()
 @bot.message_handler()
@@ -115,6 +123,7 @@ def handle_message(message):
     else:
         bot.send_message(message.chat.id, text='Шо?')
     # bot.send_message(message.chat.id, text='Приветики =)')
+    message_logger(message)
 
 
 def get_bot_update(update):

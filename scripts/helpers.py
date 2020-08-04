@@ -1,5 +1,9 @@
-import re
+import datetime
 import time
+import random
+import re
+import json
+import ast
 
 import requests
 from bs4 import BeautifulSoup
@@ -23,20 +27,17 @@ def get_all_posts_by_sources(sources):
                 found_posts = soup.findAll(source['selector'], attrs={"class": source['class']})
                 raw_posts[source['source_name']] = found_posts
             else:
-                print('get_all_posts_by_sources network error,', source['source_name'], response)  # this shit into logs
+                # print('get_all_posts_by_sources network error,', source['source_name'], response)  # this shit into logs
+                error_logger('Network error (main page {}): {}'.format(source['source_name'], response))
         return raw_posts
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('get_all_posts_by_sources error')
-        print(error)
+        error_logger("{0} in get_all_posts_by_sources: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def find_new_posts(sources, raw_posts):
     try:
         new_links = {}
-        last_posts_by_sources = {i['source_name']: {'last_post': i['last_post'], 'penult_post': i['penult_post']} for i
-                                 in
+        last_posts_by_sources = {i['source_name']: {'last_post': i['last_post'], 'penult_post': i['penult_post']} for i in
                                  sources}
 
         for source_name in raw_posts:
@@ -65,10 +66,7 @@ def find_new_posts(sources, raw_posts):
                 new_links[source_name] = result
         return new_links
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('find_new_posts error')
-        print(error)
+        error_logger("{0} in find_new_posts: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def post_preprocessing(soup, source):
@@ -111,10 +109,7 @@ def post_preprocessing(soup, source):
             'img_link': img_link
         }
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('post_preprocessing error')
-        print(error)
+        error_logger("{0} in post_preprocessing: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def get_new_posts_info(new_links):
@@ -137,13 +132,11 @@ def get_new_posts_info(new_links):
                         'source_name': source_name
                     })
                 else:
-                    print('get_new_posts_info network error', source_name, new_response)
+                    # print('get_new_posts_info network error', source_name, new_response)
+                    error_logger('Network error (inner page {}): {}'.format(source_name, new_response))
         return new_posts_info
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('get_new_posts_info error')
-        print(error)
+        error_logger("{0} in get_new_posts_info: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def find_ngrams(input_list, n):
@@ -151,10 +144,7 @@ def find_ngrams(input_list, n):
         bigrams_list = list(zip(*[input_list[i:] for i in range(n)]))
         return [' '.join(x) for x in bigrams_list]
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('find_ngrams error')
-        print(error)
+        error_logger("{0} in find_ngrams: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def find_matches(text, city):
@@ -169,10 +159,7 @@ def find_matches(text, city):
         matches_list = list(map(lambda x: x[0], top_matches))
         return bool(len(matches_list))
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('find_matches error')
-        print(error)
+        error_logger("{0} in find_matches: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def find_posts_by_every_city(cities, new_posts):
@@ -194,10 +181,7 @@ def find_posts_by_every_city(cities, new_posts):
             posts_by_cities.append(post_result)
         return posts_by_cities
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('find_posts_by_every_city error')
-        print(error)
+        error_logger("{0} in find_posts_by_every_city: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def create_button(post_url, source_name):
@@ -206,10 +190,7 @@ def create_button(post_url, source_name):
         keyboard.add(*[types.InlineKeyboardButton(text=source_name.capitalize(), url=post_url)])
         return keyboard
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('create_button error')
-        print(error)
+        error_logger("{0} in create_button: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def preprocesd_cities(cities):
@@ -220,10 +201,7 @@ def preprocesd_cities(cities):
         stripped = map(lambda x: x.strip(), splitted)
         return ','.join(stripped).strip().lower()
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('preprocesd_cities error')
-        print(error)
+        error_logger("{0} in preprocesd_cities: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def get_all_cities(users):
@@ -234,10 +212,7 @@ def get_all_cities(users):
                 cities.add(city.strip().lower())
         return cities
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('get_all_cities error')
-        print(error)
+        error_logger("{0} in get_all_cities: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def city_to_hashtag(city):
@@ -249,10 +224,7 @@ def city_to_hashtag(city):
         city = ''.join(city)
         return '#' + city
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('city_to_hashtag error')
-        print(error)
+        error_logger("{0} in city_to_hashtag: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def get_posts_for_users(users, all_posts):
@@ -262,7 +234,8 @@ def get_posts_for_users(users, all_posts):
         for user in users:
             user_result = []
             for post in all_posts:
-                for city in user['cities'].split(','):
+                user_cities = user['cities'].split(',')
+                for city in user_cities:
                     if city.strip().lower() in post['matches']:
                         results_list = list(map(lambda res: res['post_url'], user_result))
                         if not (len(user_result) and post['link'] in results_list):
@@ -270,9 +243,10 @@ def get_posts_for_users(users, all_posts):
                             post_cities = set(
                                 ['санкт-петербург' if city in ['спб', 'питер', 'петербург', 'ленинград'] else city for
                                  city in post['matches']])
-                            for tag in post_cities:
-                                if tag != 'i_want_to_get_all_cities':
-                                    post_tags += city_to_hashtag(tag) + ' '
+                            if (user['user_id'][0] != '-' or 'i_want_to_get_all_cities' in user_cities):
+                                for tag in post_cities:
+                                    if tag != 'i_want_to_get_all_cities':
+                                        post_tags += city_to_hashtag(tag) + ' '
 
                             user_result.append({
                                 'user_id': user['user_id'],
@@ -286,10 +260,7 @@ def get_posts_for_users(users, all_posts):
             full_result += user_result
         return full_result
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('get_posts_for_users error')
-        print(error)
+        error_logger("{0} in get_posts_for_users: {1!r}".format(type(ex).__name__, ex.args))
 
 
 def send_users_updates(bot, posts_for_users):
@@ -299,7 +270,15 @@ def send_users_updates(bot, posts_for_users):
             bot.send_message(post['user_id'], text='{}\n{}[!]({})'.format(post['tags'], post_title, post['post_img']),
                              parse_mode='Markdown', reply_markup=create_button(post['post_url'], post['source_name']))
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        error = template.format(type(ex).__name__, ex.args)
-        print('send_users_updates error')
-        print(error)
+        error_logger("{0} in send_users_updates: {1!r}".format(type(ex).__name__, ex.args))
+
+
+def message_logger(message):
+    with open ('user-log.txt', 'a') as file:
+        # file.write('{}\n'.format(json.dumps(ast.literal_eval(str(message)))))
+        file.write('{}\n'.format(str(message)))
+
+
+def error_logger(error):
+    with open ('error-log.txt', 'a') as file:
+        file.write('{}\n'.format(error))
